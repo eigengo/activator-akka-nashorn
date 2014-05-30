@@ -27,4 +27,6 @@ class VisionEngine {
     else                   Future.successful(None)
   }
 
+  def extractKittenJ(image: Array[Byte]): NashornFuture[Option[Kitten]] = new NashornFuture[Option[Kitten]](extractKitten(image))
+
 }

@@ -23,6 +23,8 @@ class BiometricEngine {
     Future.successful(KittenPrint(math.random))
   }
 
+  def encodeKittenJ(image: Array[Byte]): NashornFuture[KittenPrint] = new NashornFuture[KittenPrint](encodeKitten(image))
+
   /**
    * Compares two kittens' biometric prints to compute their similarity. Returns the match rate,
    * where 1.0 means "k1 and k2 are the same kitten", and 0.0 means "k1 and k2 are completely different kittens".
@@ -30,8 +32,7 @@ class BiometricEngine {
    * @param kittens the kittens to compare
    * @return the match rate
    */
-  def compareKittens(kittens: (KittenPrint, KittenPrint)): Future[Double] = {
-    Future.successful(math.random)
-  }
+  def compareKittens(kittens: (KittenPrint, KittenPrint)): Future[Double] = Future.successful(math.random)
 
+  def compareKittensJ(kittens: (KittenPrint, KittenPrint)): NashornFuture[Double] = new NashornFuture[Double](compareKittens(kittens))
 }

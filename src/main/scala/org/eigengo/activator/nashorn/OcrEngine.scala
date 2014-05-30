@@ -27,4 +27,6 @@ class OcrEngine {
     else                   Future.successful(ParsedOcrResult(Map("email" -> "sales@typesafe.com")))
   }
 
+  def recogniseJ(image: Array[Byte]): NashornFuture[OcrResult] = new NashornFuture[OcrResult](recognise(image))
+
 }
