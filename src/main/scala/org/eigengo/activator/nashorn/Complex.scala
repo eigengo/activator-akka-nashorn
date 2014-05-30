@@ -52,7 +52,7 @@ object Complex extends App {
         |  var kittenPrint = biometric.encodeKittenJ(kitten);
         |  var posterKittenPrint = vision.extractKittenJ(poster).flatMap(function(x) {
         |    if (x.isDefined()) return biometric.encodeKittenJ(x.get().kitten());
-        |    else               return NashornFuture.failed(new RuntimeException("No kitten"))
+        |    else               return NashornFuture.failed(new RuntimeException("No kitten"));
         |  }, executor);
         |
         |  kittenPrint.zip(posterKittenPrint).flatMap(function(x) {
