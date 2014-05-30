@@ -28,7 +28,7 @@ object Complex extends App {
 
     kittenPrint.zip(posterKittenPrint).flatMap(biometric.compareKittens).zip(text).onComplete {
       case Success((matchRate, text)) => println(s"Match!!! $matchRate. Contact $text")
-      case Failure(x)               => println(s"Failed ${x.getMessage}")
+      case Failure(x)                 => println(s"Failed ${x.getMessage}")
     }
   }
 
