@@ -7,7 +7,6 @@ import javax.script.ScriptEngineManager
 
 object Complex extends App {
 
-  val noImage: Array[Byte] = Array.ofDim(0)
   def loadImage(name: String): Array[Byte] = Files.readAllBytes(Paths.get(Complex.getClass.getResource(name).toURI))
 
   val ocr = new OcrEngine
