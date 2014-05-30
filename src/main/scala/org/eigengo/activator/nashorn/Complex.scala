@@ -1,7 +1,7 @@
 package org.eigengo.activator.nashorn
 
 import java.nio.file.{Paths, Files}
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success}
 import scala.concurrent.{Future, ExecutionContext}
 import javax.script.ScriptEngineManager
 
@@ -34,6 +34,7 @@ object Complex extends App {
   }
 
   def nashorn(): Unit = {
+    import org.eigengo.activator.nashorn.japi.NashornFunction._
     val engine = new ScriptEngineManager().getEngineByName("nashorn")
     val bindings = engine.createBindings()
     bindings.put("ocr", ocr)
@@ -41,6 +42,7 @@ object Complex extends App {
     bindings.put("biometric", biometric)
     bindings.put("poster", loadImage("/kittens/lost.jpg"))
     bindings.put("kitten", loadImage("/kittens/k2.jpg"))
+    bindings.put("next", { message: String => println(message) }.asJavaFunction )
     bindings.put("executor", ExecutionContext.Implicits.global)
 
     engine.eval(
@@ -58,8 +60,8 @@ object Complex extends App {
         |  kittenPrint.zip(posterKittenPrint).flatMap(function(x) {
         |     return NashornFuture.fromScala(biometric.compareKittens(x));
         |  }, executor).zip(text).onComplete2(
-        |     function(x) { print("Match!! " + x._1() + ", contact " + x._2()); },
-        |     function(x) { print("Failed " + x.getMessage()); },
+        |     function(x) { next(new java.lang.String("Match!! " + x._1() + ", contact " + x._2())); },
+        |     function(x) { next(new java.lang.String("Failed " + x.getMessage())); },
         |     executor);
         |}
       """.stripMargin, bindings)

@@ -2,6 +2,7 @@ package org.eigengo.activator.nashorn.japi
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import java.util.function
 
 object NashornFuture {
 
@@ -25,6 +26,30 @@ class NashornFuture[A](private val future: Future[A]) {
     future.onComplete {
       case Success(x) => s(x)
       case Failure(t) => f(t)
-    } (executor)
+    }(executor)
   }
+
 }
+
+
+object NashornFunction {
+  
+  implicit class JavaFunctionConversion[A, U](f: A => U) {
+
+    def asJavaFunction: java.util.function.Function[A, U] = new NashornFunction(f)
+
+  }
+
+  class NashornFunction[A, U](f: A => U) extends java.util.function.Function[A, U] {
+
+    override def apply(t: A): U = f(t)
+
+    override def compose[V](before: function.Function[_ >: V, _ <: A]): function.Function[V, U] =
+      new NashornFunction({ t: V => f(before.apply(t))})
+
+    override def andThen[V](after: function.Function[_ >: U, _ <: V]): function.Function[A, V] =
+      new NashornFunction({ t: A => after.apply(f(t))})
+  }
+  
+}
+
