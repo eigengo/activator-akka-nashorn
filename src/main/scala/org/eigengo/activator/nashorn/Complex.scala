@@ -1,7 +1,7 @@
 package org.eigengo.activator.nashorn
 
 import java.nio.file.{Paths, Files}
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 import scala.concurrent.{Future, ExecutionContext}
 import javax.script.ScriptEngineManager
 
@@ -45,19 +45,22 @@ object Complex extends App {
 
     engine.eval(
       """
-        |var imports = new JavaImporter(org.eigengo.activator.nashorn);
+        |var imports = new JavaImporter(org.eigengo.activator.nashorn.japi);
         |
         |with (imports) {
-        |  var text = ocr.recogniseJ(poster);
-        |  var kittenPrint = biometric.encodeKittenJ(kitten);
-        |  var posterKittenPrint = vision.extractKittenJ(poster).flatMap(function(x) {
-        |    if (x.isDefined()) return biometric.encodeKittenJ(x.get().kitten());
-        |    else               return NashornFuture.failed(new RuntimeException("No kitten"));
+        |  var text = NashornFuture.fromScala(ocr.recognise(poster));
+        |  var kittenPrint = NashornFuture.fromScala(biometric.encodeKitten(kitten));
+        |  var posterKittenPrint = NashornFuture.fromScala(vision.extractKitten(poster)).flatMap(function(x) {
+        |    if (x.isDefined()) return NashornFuture.fromScala(biometric.encodeKitten(x.get().kitten()));
+        |    else               return NashornFuture.failed(new java.lang.RuntimeException("No kitten"));
         |  }, executor);
         |
         |  kittenPrint.zip(posterKittenPrint).flatMap(function(x) {
-        |     return biometric.compareKittensJ(x);
-        |  }, executor).zip(text).onComplete(function(x) { print(x); }, executor);
+        |     return NashornFuture.fromScala(biometric.compareKittens(x));
+        |  }, executor).zip(text).onComplete2(
+        |     function(x) { print("Match!! " + x._1() + ", contact " + x._2()); },
+        |     function(x) { print("Failed " + x.getMessage()); },
+        |     executor);
         |}
       """.stripMargin, bindings)
   }
