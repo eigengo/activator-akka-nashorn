@@ -20,11 +20,11 @@ public class NashornFuture<A> {
         return new NashornFuture<>(Future$.MODULE$.failed(cause));
     }
 
-    public <U> NashornFuture<U> flatMap(final Function<A, NashornFuture<U>> mapper, final ExecutionContext executor) {
+    public <U> NashornFuture<U> flatMap(final Function<A, NashornFuture<U>> f, final ExecutionContext executor) {
         return new NashornFuture<>(this.future.flatMap(new JavaPartialFunction<A, Future<U>>() {
             @Override
             public Future<U> apply(A x, boolean isCheck) throws Exception {
-                return mapper.apply(x).future;
+                return f.apply(x).future;
             }
         }, executor));
     }
