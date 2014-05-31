@@ -15,7 +15,13 @@ with (imports) {
                 {
                     name: "process-kitten",
                     run: function (request, instance) {
-                        instance.end({three: "three"});
+                        instance.next("process-final", {three: "three"});
+                    }
+                },
+                {
+                    name: "process-final",
+                    run: function(request, instance) {
+                        instance.end({four:{name:"four", value:4}});
                     }
                 }
             ],
