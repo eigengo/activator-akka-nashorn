@@ -20,7 +20,6 @@ object Workflow extends App {
     bindings.put("ocr", ocr)
     bindings.put("vision", vision)
     bindings.put("biometric", biometric)
-    bindings.put("next", (next _).asJavaFunction)
     bindings.put("data", null)
 
     // load the workflow
@@ -38,11 +37,10 @@ object Workflow extends App {
       engine.eval(
         """
           |if (data == null) data = newData;
-          |else for (var property in newData) {
-          |    if (newData.hasOwnProperty(property)) {
-          |        data[property] = newData[property];
+          |else if (newData != null)
+          |    for (var property in newData) {
+          |        if (newData.hasOwnProperty(property)) data[property] = newData[property];
           |    }
-          |}
         """.stripMargin, bindings)
       bindings.remove("newData")
     }
@@ -64,10 +62,12 @@ object Workflow extends App {
     }
 
     // flow operation
-    def next(stateName: String, data: AnyRef): Unit = {
+    def next(stateName: String): Unit = next(stateName, null)
+    def next(stateName: String, data: AnyRef): Unit = next(stateName, data, null)
+    def next(stateName: String, data: AnyRef, transition: AnyRef): Unit = {
       mergeData(data)
       bindings.put("currentState", findState(stateName))
-      println("*** moving on to " + stateName + " using " + data)
+      println("*** moving on to " + stateName + " with " + data + " using " + transition)
     }
 
     def end(data: AnyRef): Unit = {

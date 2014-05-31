@@ -8,13 +8,13 @@ with (imports) {
             states: [
                 {
                     name: "process-poster",
-                    run: function (request, instance, data) {
+                    run: function (request, instance) {
                         instance.next("process-kitten", { one: 1, two: "two" });
                     }
                 },
                 {
                     name: "process-kitten",
-                    run: function (request, instance, data) {
+                    run: function (request, instance) {
                         instance.end({three: "three"});
                     }
                 }
