@@ -1,14 +1,15 @@
+// start of header
 var imports = new JavaImporter(org.eigengo.activator.nashorn.japi);
 
 with (imports) {
 
     function workflow() {
-        return {
+        return /* end of header */ {
             states: [
                 {
                     name: "process-poster",
                     run: function (request, next, data) {
-                        var poster = request.entity().data().toByteArray();
+                        var poster = request; // request.entity().data().toByteArray();
 
                         var text = Future.apply(ocr.recognise(poster));
                         var posterKittenPrint = Future.apply(vision.extractKitten(poster)).flatMap(function (x) {
@@ -30,7 +31,7 @@ with (imports) {
                 {
                     name: "process-kitten",
                     run: function (request, next, data) {
-                        var kitten = request.entity().data().toByteArray();
+                        var kitten = request; // request.entity().data().toByteArray();
                         Future.apply(biometric.encodeKitten(kitten)).flatMap(function (x) {
                             return Future.apply(biometric.compareKittens(x, data.posterKittenPrint));
                         }, executor).onComplete2(
@@ -51,9 +52,12 @@ with (imports) {
                     }
                 }
             ],
-            initial: {
+            initialTransition: {
 
             }
-        }
+        } /* start of footer */ ;
     }
+
+    workflow();
 }
+// end of footer
