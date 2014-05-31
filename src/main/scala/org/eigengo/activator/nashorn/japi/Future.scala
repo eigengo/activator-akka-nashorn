@@ -1,23 +1,23 @@
 package org.eigengo.activator.nashorn.japi
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext}
 import scala.util.{Failure, Success, Try}
 import java.util.function
 
-object NashornFuture {
+object Future {
 
-  def failed(t: Throwable): NashornFuture[_] = new NashornFuture(Future.failed(t))
+  def failed(t: Throwable): Future[_] = new Future(scala.concurrent.Future.failed(t))
 
-  def fromScala[A](future: Future[A]): NashornFuture[A] = new NashornFuture(future)
+  def fromScala[A](future: scala.concurrent.Future[A]): Future[A] = new Future(future)
 
 }
 
-class NashornFuture[A](private val future: Future[A]) {
+class Future[A](private val future: scala.concurrent.Future[A]) {
 
-  def flatMap[U](f: java.util.function.Function[A, NashornFuture[U]], executor: ExecutionContext): NashornFuture[U] =
-    new NashornFuture(future.flatMap(x => f(x).future)(executor))
+  def flatMap[U](f: java.util.function.Function[A, Future[U]], executor: ExecutionContext): Future[U] =
+    new Future(future.flatMap(x => f(x).future)(executor))
 
-  def zip[U](that: NashornFuture[U]): NashornFuture[(A, U)] = new NashornFuture(this.future.zip(that.future))
+  def zip[U](that: Future[U]): Future[(A, U)] = new Future(this.future.zip(that.future))
 
   def onComplete(f: java.util.function.Function[Try[A], _], executor: ExecutionContext): Unit =
     future.onComplete(x => f(x))(executor)
@@ -32,7 +32,7 @@ class NashornFuture[A](private val future: Future[A]) {
 }
 
 
-object NashornFunction {
+object Function {
   
   implicit class JavaFunctionConversion[A, U](f: A => U) {
 

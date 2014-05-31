@@ -33,7 +33,7 @@ object Complex extends App {
   }
 
   def nashorn(): Unit = {
-    import org.eigengo.activator.nashorn.japi.NashornFunction._
+    import org.eigengo.activator.nashorn.japi.Function._
     val engine = new ScriptEngineManager().getEngineByName("nashorn")
     val bindings = engine.createBindings()
     bindings.put("ocr", ocr)
@@ -49,15 +49,15 @@ object Complex extends App {
         |var imports = new JavaImporter(org.eigengo.activator.nashorn.japi);
         |
         |with (imports) {
-        |  var text = NashornFuture.fromScala(ocr.recognise(poster));
-        |  var kittenPrint = NashornFuture.fromScala(biometric.encodeKitten(kitten));
-        |  var posterKittenPrint = NashornFuture.fromScala(vision.extractKitten(poster)).flatMap(function(x) {
-        |    if (x.isDefined()) return NashornFuture.fromScala(biometric.encodeKitten(x.get().kitten()));
-        |    else               return NashornFuture.failed(new java.lang.RuntimeException("No kitten"));
+        |  var text = Future.fromScala(ocr.recognise(poster));
+        |  var kittenPrint = Future.fromScala(biometric.encodeKitten(kitten));
+        |  var posterKittenPrint = Future.fromScala(vision.extractKitten(poster)).flatMap(function(x) {
+        |    if (x.isDefined()) return Future.fromScala(biometric.encodeKitten(x.get().kitten()));
+        |    else               return Future.failed(new java.lang.RuntimeException("No kitten"));
         |  }, executor);
         |
         |  kittenPrint.zip(posterKittenPrint).flatMap(function(x) {
-        |     return NashornFuture.fromScala(biometric.compareKittens(x));
+        |     return Future.fromScala(biometric.compareKittens(x));
         |  }, executor).zip(text).onComplete2(
         |     function(x) { next(new java.lang.String("Match!! " + x._1() + ", contact " + x._2())); },
         |     function(x) { next(new java.lang.String("Failed " + x.getMessage())); },
