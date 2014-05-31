@@ -9,24 +9,37 @@ with (imports) {
                 {
                     name: "process-poster",
                     run: function (request, instance) {
-                        instance.next("process-kitten", { one: 1, two: "two" });
+                        instance.next("process-kitten",
+                            { one: 1, two: "two" },
+                            {
+                                expect: { type: "video/mjpeg2000", camera: "front" },
+                                transition: { message: "XXX", delay: "3s" }
+                            }
+                        );
                     }
                 },
                 {
                     name: "process-kitten",
                     run: function (request, instance) {
-                        instance.next("process-final", {three: "three"});
+                        instance.next("process-final",
+                            { three: "three" },
+                            {
+                                expect: { type: "video/mjpeg2000", camera: "front" },
+                                transition: { message: "XXX", delay: "3s" }
+                            }
+                        );
                     }
                 },
                 {
                     name: "process-final",
                     run: function(request, instance) {
-                        instance.end({four:{name:"four", value:4}});
+                        instance.end({four:{name:"four", value:4}}, {});
                     }
                 }
             ],
-            initialTransition: {
-
+            initialInstruction: {
+                expect: { type: "image/jpeg2000", camera: "back" },
+                transition: { message: "Start", delay: "3s" }
             }
         } /* start of footer */ ;
     }

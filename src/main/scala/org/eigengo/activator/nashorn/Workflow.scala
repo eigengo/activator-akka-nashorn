@@ -3,6 +3,8 @@ package org.eigengo.activator.nashorn
 import java.nio.file.{Paths, Files}
 import javax.script.{ScriptContext, SimpleScriptContext, ScriptEngineManager}
 import scala.io.Source
+import jdk.nashorn.api.scripting.{JSObject, ScriptObjectMirror}
+import jdk.nashorn.internal.runtime.ScriptObject
 
 object Workflow extends App {
   def loadImage(name: String): Array[Byte] = Files.readAllBytes(Paths.get(Workflow.getClass.getResource(name).toURI))
@@ -11,8 +13,28 @@ object Workflow extends App {
   val vision = new VisionEngine
   val biometric = new BiometricEngine
 
-  class WorkflowInstance(name: String)
-                        (onResponse: String => Unit) {
+  trait MapInstructionAndData {
+    type Instruction = Any
+    type Data = Any
+
+    private def map(value: AnyRef): Any = {
+      import scala.collection.JavaConversions._
+
+      value match {
+        case x: ScriptObjectMirror => x.keySet().foldLeft(Map.empty[String, Any])((b, a) => b + (a -> map(x.get(a))))
+        case x: ScriptObject => x.keySet().foldLeft(Map.empty[String, Any])((b, a) => b + (a.toString -> map(x.get(a))))
+        case x => x
+      }
+    }
+
+    def mapInstruction(instruction: AnyRef): Instruction = map(instruction)
+    def mapData(data: AnyRef): Data = map(data)
+  }
+
+  abstract class WorkflowInstance[T, D](name: String)(onResponse: (T, D) => Unit) {
+    def mapInstruction(instruction: AnyRef): T
+    def mapData(data: AnyRef): D
+
     private val engine = new ScriptEngineManager().getEngineByName("nashorn")
     private val bindings = engine.createBindings()
 
@@ -27,7 +49,9 @@ object Workflow extends App {
 
     // compute initial state
     var currentState = engine.eval("workflow.states[0];", contextWith("workflow" -> workflow))
-    val initialTransition = engine.eval("workflow.initialTransition", contextWith("workflow" -> workflow))
+    val initialInstruction = engine.eval("workflow.initialInstruction", contextWith("workflow" -> workflow))
+    
+    respond(data, initialInstruction)
 
     private def contextWith(elements: (String, Any)*): ScriptContext = {
       val ctx = new SimpleScriptContext()
@@ -68,27 +92,24 @@ object Workflow extends App {
       state
     }
 
-    private def respond(data: AnyRef, transition: AnyRef): Unit = {
-      val x = engine.eval("JSON.stringify(foo.four)",
-        contextWith("foo" -> data, "transition" -> transition))
-      println(x)
-      onResponse("")
+    private def respond(data: AnyRef, instruction: AnyRef): Unit = {
+      onResponse(mapInstruction(instruction), mapData(data))
     }
 
     // flow operation
     def next(stateName: String): Unit = next(stateName, null)
     def next(stateName: String, newData: AnyRef): Unit = next(stateName, newData, null)
-    def next(stateName: String, newData: AnyRef, transition: AnyRef): Unit = {
+    def next(stateName: String, newData: AnyRef, instruction: AnyRef): Unit = {
       data = mergeData(newData)
       currentState = findState(stateName)
 
-      respond(data, transition)
+      respond(data, instruction)
     }
 
-    def end(newData: AnyRef): Unit = {
+    def end(newData: AnyRef): Unit = end(newData, null)
+    def end(newData: AnyRef, instruction: AnyRef): Unit = {
       data = mergeData(newData)
-
-      respond(data, null)
+      respond(data, instruction)
     }
 
     // request submission
@@ -98,11 +119,11 @@ object Workflow extends App {
     }
   }
 
-  def onResponse(data: String): Unit = {
-    println(s">>> Reply with $data")
+  def onResponse(instruction: Any, data: Any): Unit = {
+    println(s">>> Transition using $instruction with $data")
   }
 
-  val instance = new WorkflowInstance("/structure.js")(onResponse)
+  val instance = new WorkflowInstance("/structure.js")(onResponse) with MapInstructionAndData
   instance.input(loadImage("/kittens/lost.jpg"))
   instance.input(loadImage("/kittens/k2.jpg"))
   instance.input(loadImage("/kittens/k1.jpg"))
