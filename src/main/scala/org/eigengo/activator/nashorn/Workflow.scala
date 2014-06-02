@@ -114,7 +114,7 @@ object Workflow extends App {
 
     // request submission
     def input[A](request: A): Unit = {
-      engine.eval("currentState.run(request, instance, data);",
+      engine.eval("currentState.run(instance, instance, data);",
         contextWith("currentState" -> currentState, "request" -> request, "instance" -> this, "data" -> data))
     }
   }
