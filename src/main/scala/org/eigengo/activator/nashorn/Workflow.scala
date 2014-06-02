@@ -17,16 +17,19 @@ object Workflow extends App {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def onResponse(instruction: Any, data: Any): Unit = {
-    println(s">>> Transition using $instruction with $data")
+  def onResponse(instruction: Any, data: Any, end: Boolean): Unit = {
+    if (end)
+      println(s">>> Finished using $instruction with $data")
+    else
+      println(s">>> Transition using $instruction with $data")
   }
 
-//  val structureExample = new WorkflowInstance(loadScript("/structure.js"))(onResponse) with MapInstructionAndData
-//  structureExample.tell(loadImage("/kittens/lost.jpg"))
-//  structureExample.tell(loadImage("/kittens/k2.jpg"))
-//  structureExample.tell(loadImage("/kittens/k1.jpg"))
+  val structureExample = new WorkflowInstance(loadScript("/structure.js"), Map())(onResponse) with MapInstructionAndData
+  structureExample.tell(loadImage("/kittens/lost.jpg"))
+  structureExample.tell(loadImage("/kittens/k2.jpg"))
+  structureExample.tell(loadImage("/kittens/k1.jpg"))
 
-  println("*******************************")
+  println("-------------------------------")
   
   val nativeExample = new WorkflowInstance(
     loadScript("/native.js"),
@@ -34,6 +37,8 @@ object Workflow extends App {
   nativeExample.tell(loadImage("/kittens/lost.jpg"))
   Thread.sleep(1000)
   nativeExample.tell(loadImage("/kittens/k2.jpg"))
+
+  println("*******************************")
 
   Console.readLine()
 }

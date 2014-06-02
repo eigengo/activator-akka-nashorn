@@ -1,6 +1,7 @@
 function workflow() {
     var Future = org.eigengo.activator.nashorn.japi.Future;
     var String = java.lang.String;
+    var RuntimeException = java.lang.RuntimeException;
     var defaultInstruction = {
         expect: { type: "image/jpeg2000", camera: "back" },
         transition: { message: "Start", delay: "3s" }
@@ -25,7 +26,7 @@ function workflow() {
                     var posterKittenPrint = Future.adapt(vision.extractKitten(poster)).flatMap(executor, function (msg) {
                         var json = bytesToJson(msg);
                         if (json.kitten) return Future.adapt(biometric.encodeKitten(json.kitten));
-                        else             return Future.failed(new java.lang.RuntimeException("No kitten"));
+                        else             return Future.failed(new RuntimeException("No kitten"));
                     });
                     posterKittenPrint.zip(text).onComplete2(executor,
                         function (x) { instance.next("process-kitten", { posterKittenPrint: x._1(), text: bytesToJson(x._2()) }, defaultInstruction); },

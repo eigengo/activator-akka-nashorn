@@ -2,7 +2,7 @@ package org.eigengo.activator.nashorn
 
 import jdk.nashorn.api.scripting.ScriptObjectMirror
 import jdk.nashorn.internal.runtime.ScriptObject
-import javax.script.{Bindings, SimpleScriptContext, ScriptContext, ScriptEngineManager}
+import javax.script.{SimpleScriptContext, ScriptContext, ScriptEngineManager}
 import scala.concurrent.ExecutionContext
 
 trait MapInstructionAndData {
@@ -33,7 +33,7 @@ trait WorkflowInstanceOperations {
   def end(newData: AnyRef, instruction: AnyRef): Unit
 }
 
-abstract class WorkflowInstance[I, D](script: String, variables: Map[String, AnyRef])(onResponse: (I, D) => Unit)
+abstract class WorkflowInstance[I, D](script: String, variables: Map[String, AnyRef])(onResponse: (I, D, Boolean) => Unit)
   extends WorkflowInstanceOperations {
 
   def mapInstruction(instruction: AnyRef): I
@@ -54,7 +54,7 @@ abstract class WorkflowInstance[I, D](script: String, variables: Map[String, Any
   var currentState = engine.eval("workflow.states[0];", contextWith("workflow" -> workflow))
   val initialInstruction = engine.eval("workflow.initialInstruction", contextWith("workflow" -> workflow))
 
-  respond(data, initialInstruction)
+  respond(data, initialInstruction, false)
 
   private def contextWith(elements: (String, Any)*): ScriptContext = {
     val ctx = new SimpleScriptContext()
@@ -94,8 +94,8 @@ abstract class WorkflowInstance[I, D](script: String, variables: Map[String, Any
     state
   }
 
-  private def respond(data: AnyRef, instruction: AnyRef): Unit = {
-    onResponse(mapInstruction(instruction), mapData(data))
+  private def respond(data: AnyRef, instruction: AnyRef, end: Boolean): Unit = {
+    onResponse(mapInstruction(instruction), mapData(data), end)
   }
 
   // flow operation
@@ -103,12 +103,12 @@ abstract class WorkflowInstance[I, D](script: String, variables: Map[String, Any
     data = mergeData(newData)
     currentState = findState(stateName)
 
-    respond(data, instruction)
+    respond(data, instruction, false)
   }
 
   def end(newData: AnyRef, instruction: AnyRef): Unit = {
     data = mergeData(newData)
-    respond(data, instruction)
+    respond(data, instruction, true)
   }
 
   // request submission
