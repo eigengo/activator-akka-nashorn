@@ -5,21 +5,18 @@ function workflow() {
                 name: "process-poster",
                 run: function (instance, request) {
                     var poster = request; // request.entity().data().toByteArray();
-
-                    var text = $(ocr.recognise(poster));
-                    var posterKittenPrint = $(vision.extractKitten(poster)).flatMap(function (x) {
-                        if (x.isDefined()) return $(biometric.encodeKitten(x.get().kitten()));
-                        else               return $failed(new java.lang.RuntimeException("No kitten"));
-                    }, executor);
+                    var text = Future.fromScla(ocr.recognise(poster));
+                    var posterKittenPrint = Future.fromScla(vision.extractKitten(poster)).flatMap(function (x) {
+                        if (x.isDefined()) return Future.fromScla(biometric.encodeKitten(x.get().kitten()));
+                        else               return Future.failed(new java.lang.RuntimeException("No kitten"));
+                    });
 
                     posterKittenPrint.zip(text).onComplete2(
-                        function (x) {
-                            next("process-kitten", { posterKittenPrint: x._1(), text: x._2() });
+                        function (x) { next("process-kitten", { posterKittenPrint: x._1(), text: x._2() });
                         },
                         function (x) {
                             next("end", {});
-                        },
-                        executor
+                        }
                     );
                 }
             },

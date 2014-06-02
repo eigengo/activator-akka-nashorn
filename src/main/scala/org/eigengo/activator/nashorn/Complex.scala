@@ -9,9 +9,9 @@ object Complex extends App {
 
   def loadImage(name: String): Array[Byte] = Files.readAllBytes(Paths.get(Complex.getClass.getResource(name).toURI))
 
-  val ocr = new OcrEngine
-  val vision = new VisionEngine
-  val biometric = new BiometricEngine
+  val ocr = new LocalOcrEngine
+  val vision = new LocalVisionEngine
+  val biometric = new LocalBiometricEngine
 
   def scala(): Unit = {
     import ExecutionContext.Implicits.global
@@ -33,7 +33,6 @@ object Complex extends App {
   }
 
   def nashorn(): Unit = {
-    import org.eigengo.activator.nashorn.japi.Function._
     val engine = new ScriptEngineManager().getEngineByName("nashorn")
     val bindings = engine.createBindings()
     bindings.put("ocr", ocr)
@@ -41,7 +40,6 @@ object Complex extends App {
     bindings.put("biometric", biometric)
     bindings.put("poster", loadImage("/kittens/lost.jpg"))
     bindings.put("kitten", loadImage("/kittens/k2.jpg"))
-    bindings.put("next", { message: String => println(message) }.asJavaFunction )
     bindings.put("executor", ExecutionContext.Implicits.global)
 
     engine.eval(
@@ -49,19 +47,19 @@ object Complex extends App {
         |var imports = new JavaImporter(org.eigengo.activator.nashorn.japi);
         |
         |with (imports) {
-        |  var text = Future.fromScala(ocr.recognise(poster));
-        |  var kittenPrint = Future.fromScala(biometric.encodeKitten(kitten));
-        |  var posterKittenPrint = Future.fromScala(vision.extractKitten(poster)).flatMap(function(x) {
-        |    if (x.isDefined()) return Future.fromScala(biometric.encodeKitten(x.get().kitten()));
+        |  var text = Future.adapt(ocr.recognise(poster));
+        |  var kittenPrint = Future.adapt(biometric.encodeKitten(kitten));
+        |  var posterKittenPrint = Future.adapt(vision.extractKitten(poster)).flatMap(executor, function(x) {
+        |    if (x.isDefined()) return Future.adapt(biometric.encodeKitten(x.get().kitten()));
         |    else               return Future.failed(new java.lang.RuntimeException("No kitten"));
-        |  }, executor);
+        |  });
         |
-        |  kittenPrint.zip(posterKittenPrint).flatMap(function(x) {
-        |     return Future.fromScala(biometric.compareKittens(x));
-        |  }, executor).zip(text).onComplete2(
-        |     function(x) { next(new java.lang.String("Match!! " + x._1() + ", contact " + x._2())); },
-        |     function(x) { next(new java.lang.String("Failed " + x.getMessage())); },
-        |     executor);
+        |  kittenPrint.zip(posterKittenPrint).flatMap(executor, function(x) {
+        |     return Future.adapt(biometric.compareKittens(x));
+        |  }).zip(text).onComplete2(executor,
+        |     function(x) { print("Match!! " + x._1() + ", contact " + x._2()); },
+        |     function(x) { print("Failed " + x.getMessage()); }
+        |  );
         |}
       """.stripMargin, bindings)
   }

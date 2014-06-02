@@ -1,9 +1,9 @@
 package org.eigengo.activator.nashorn
 
 import scala.concurrent.Future
-import org.eigengo.activator.nashorn.OcrEngine.{ParsedOcrResult, RawOcrResult, OcrResult}
+import org.eigengo.activator.nashorn.LocalOcrEngine.{ParsedOcrResult, RawOcrResult, OcrResult}
 
-object OcrEngine {
+object LocalOcrEngine {
 
   sealed trait OcrResult
   case class RawOcrResult(rawText: String) extends OcrResult
@@ -11,7 +11,7 @@ object OcrEngine {
 
 }
 
-class OcrEngine {
+class LocalOcrEngine {
 
   /**
    * Rather silly implementation of OCR. It fails when it receives empty image, otherwise

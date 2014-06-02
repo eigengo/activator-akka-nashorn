@@ -1,16 +1,16 @@
 package org.eigengo.activator.nashorn
 
 import scala.concurrent.Future
-import org.eigengo.activator.nashorn.VisionEngine.{Rectangle, Kitten}
+import org.eigengo.activator.nashorn.LocalVisionEngine.{Rectangle, Kitten}
 
-object VisionEngine {
+object LocalVisionEngine {
 
   case class Rectangle(x: Int, y: Int, w: Int, h: Int)
   case class Kitten(coordinates: Rectangle, kitten: Array[Byte])
 
 }
 
-class VisionEngine {
+class LocalVisionEngine {
 
   /**
    * Extracts the line in the form of a kitten (viz https://www.youtube.com/watch?v=BKorP55Aqvg) from
