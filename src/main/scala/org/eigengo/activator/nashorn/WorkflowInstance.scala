@@ -17,6 +17,7 @@ object WorkflowInstance {
 
 class WorkflowInstance(script: String, variables: Map[String, AnyRef])(onInitialized: OnInitialized) {
 
+  // instantiate the script engine
   private val engine = new ScriptEngineManager().getEngineByName("nashorn")
 
   // set up bindings
@@ -28,10 +29,9 @@ class WorkflowInstance(script: String, variables: Map[String, AnyRef])(onInitial
   // load the workflow
   private val workflow = engine.eval(script)
 
-  // compute initial state
+  // compute initial state, initial instruction; reply with the initial instruction
   var currentState = engine.eval("workflow.states[0];", contextWith("workflow" -> workflow))
   val initialInstruction = engine.eval("workflow.initialInstruction", contextWith("workflow" -> workflow))
-
   onInitialized(initialInstruction)
 
   private def contextWith(elements: (String, Any)*): ScriptContext = {

@@ -17,16 +17,24 @@ trait WorkflowService extends Directives {
 
   private implicit val _: Formats = Serialization.formats(NoTypeHints)
   private implicit val timeout = Timeout(5000, TimeUnit.MILLISECONDS)
+  import WorkflowObjectMapper._
 
   private def toJson(value: Any): HttpResponse = value match {
     case Started(id, instruction) =>
-      HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, write(Map("id" -> id, "instruction" -> WorkflowObjectMapper.map(instruction)))))
+      HttpResponse(entity =
+        HttpEntity(ContentTypes.`application/json`, write(Map("id" -> id, "instruction" -> map(instruction)))))
     case End(id, instruction, data) =>
-      HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, write(Map("id" -> id, "instruction" -> WorkflowObjectMapper.map(instruction), "data" -> WorkflowObjectMapper.map(data)))))
+      HttpResponse(entity =
+        HttpEntity(ContentTypes.`application/json`,  write(Map("id" -> id, "instruction" -> map(instruction), "data" -> map(data)))))
     case Next(id, instruction, data) =>
-      HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, write(Map("id" -> id, "instruction" -> WorkflowObjectMapper.map(instruction), "data" -> WorkflowObjectMapper.map(data)))))
+      HttpResponse(entity =
+        HttpEntity(ContentTypes.`application/json`, write(Map("id" -> id, "instruction" -> map(instruction), "data" -> map(data)))))
     case Error(id, error, instruction, data) =>
-      HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, write(Map("id" -> id).toString())), status = StatusCodes.BadRequest)
+      HttpResponse(entity =
+        HttpEntity(ContentTypes.`application/json`, write(Map("id" -> id))), status = StatusCodes.BadRequest)
+    case StartFailed =>
+      HttpResponse(entity =
+        HttpEntity(ContentTypes.`application/json`, "{}"), status = StatusCodes.NotFound)
   }
 
 

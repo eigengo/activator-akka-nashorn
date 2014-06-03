@@ -9,6 +9,7 @@ object WorkflowActor {
   case class StartWorkflow(workflowName: String) extends AnyVal
   case class Request[A](id: String, request: A)
   case class Started(id: String, instruction: Any)
+  case object StartFailed
 
   val nativeOcr = new NativeOcrEngine
   val nativeVision = new NativeVisionEngine
@@ -30,7 +31,7 @@ class WorkflowActor extends Actor{
           )
           context.actorOf(Props(new WorkflowInstanceActor(instance)), name = id)
         case Failure(_) =>
-          // :(
+          sender() ! StartFailed
       }
     case Request(id, request) =>
       context.actorSelection(id).tell(request, sender)
