@@ -17,31 +17,35 @@ object Workflow extends App {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
+  def onInitialized(instruction: Any): Unit = {
+    println(s">>> Started using ${WorkflowObjectMapper.map(instruction)}")
+  }
+
   def onNext(instruction: Any, data: Any): Unit = {
-    println(s">>> Transition using $instruction with $data")
+    println(s">>> Transition using ${WorkflowObjectMapper.map(instruction)} with ${WorkflowObjectMapper.map(data)}")
   }
 
   def onEnd(instruction: Any, data: Any): Unit = {
-    println(s">>> Finished using $instruction with $data")
+    println(s">>> Finished using ${WorkflowObjectMapper.map(instruction)} with ${WorkflowObjectMapper.map(data)}")
   }
 
   def onError(error: Any, instruction: Any, data: Any): Unit = {
-    println(s">>> Error $error using $instruction with $data")
+    println(s">>> Error ${WorkflowObjectMapper.map(error)} using ${WorkflowObjectMapper.map(instruction)} with ${WorkflowObjectMapper.map(data)}")
   }
 
-  val structureExample = new WorkflowInstance(loadScript("/structure.js"), Map())(onNext)(onEnd)(onError) with ToMapInstructionAndDataMapper with PassthroughErrorMapper
-  structureExample.tell(loadImage("/kittens/lost.jpg"))
-  structureExample.tell(loadImage("/kittens/k2.jpg"))
-  structureExample.tell(loadImage("/kittens/k1.jpg"))
+  val structureExample = new WorkflowInstance(loadScript("/structure.js"), Map())(onInitialized)
+  structureExample.tell(loadImage("/kittens/lost.jpg"), onNext, onEnd, onError)
+  structureExample.tell(loadImage("/kittens/k2.jpg"), onNext, onEnd, onError)
+  structureExample.tell(loadImage("/kittens/k1.jpg"), onNext, onEnd, onError)
 
   println("-------------------------------")
   
   val nativeExample = new WorkflowInstance(
     loadScript("/native.js"),
-    Map("ocr" -> nativeOcr, "biometric" -> nativeBiometric, "vision" -> nativeVision))(onNext)(onEnd)(onError) with ToMapInstructionAndDataMapper with PassthroughErrorMapper
-  nativeExample.tell(loadImage("/kittens/lost.jpg"))
+    Map("ocr" -> nativeOcr, "biometric" -> nativeBiometric, "vision" -> nativeVision))(onInitialized)
+  nativeExample.tell(loadImage("/kittens/lost.jpg"), onNext, onEnd, onError)
   Thread.sleep(1000)
-  nativeExample.tell(loadImage("/kittens/k2.jpg"))
+  nativeExample.tell(loadImage("/kittens/k2.jpg"), onNext, onEnd, onError)
 
   println("*******************************")
 

@@ -5,43 +5,22 @@ import jdk.nashorn.internal.runtime.ScriptObject
 import javax.script.{SimpleScriptContext, ScriptContext, ScriptEngineManager}
 import scala.concurrent.ExecutionContext
 import java.util
+import org.eigengo.activator.nashorn.WorkflowInstance.{OnError, OnEnd, OnNext, OnInitialized}
 
-trait ToMapInstructionAndDataMapper {
+object WorkflowInstance {
+  type Instruction = Any
+  type Data = Any
+  type Error = Any
 
-  val expandPrimitiveArrays = false
-
-  private def map(value: AnyRef): Any = {
-    import scala.collection.JavaConversions._
-
-    value match {
-      case x: ScriptObjectMirror => x.keySet().foldLeft(Map.empty[String, Any])((b, a) => b + (a -> map(x.get(a))))
-      case x: ScriptObject => x.keySet().foldLeft(Map.empty[String, Any])((b, a) => b + (a.toString -> map(x.get(a))))
-      case x: Array[Byte] => if (expandPrimitiveArrays) util.Arrays.toString(x) else "[]"
-      case x => x
-    }
-  }
-
-  def mapInstruction(instruction: AnyRef): Any = map(instruction)
-  def mapData(data: AnyRef): Any = map(data)
+  type OnInitialized = (Instruction) => Unit
+  type OnNext = (Instruction, Data) => Unit
+  type OnEnd = (Instruction, Data) => Unit
+  type OnError = (Error, Instruction, Data) => Unit
 }
 
-trait PassthroughErrorMapper {
-  def mapError(error: AnyRef): AnyRef = error
-}
-
-abstract class WorkflowInstance[I, D, E](script: String, variables: Map[String, AnyRef])
-                                     (onNext: (I, D) => Unit)
-                                     (onEnd: (I, D) => Unit)
-                                     (onError: (E, I, D) => Unit) {
-
-  def mapInstruction(instruction: AnyRef): I
-  def mapData(data: AnyRef): D
-  def mapError(error: AnyRef): E
+class WorkflowInstance(script: String, variables: Map[String, AnyRef])(onInitialized: OnInitialized) {
 
   private val engine = new ScriptEngineManager().getEngineByName("nashorn")
-
-  //import scala.collection.JavaConversions._
-  //private val instance = new WorkflowInstanceBridge(mapAsJavaMap(variables), this)
 
   // set up bindings
   private var data: AnyRef = _
@@ -56,7 +35,7 @@ abstract class WorkflowInstance[I, D, E](script: String, variables: Map[String, 
   var currentState = engine.eval("workflow.states[0];", contextWith("workflow" -> workflow))
   val initialInstruction = engine.eval("workflow.initialInstruction", contextWith("workflow" -> workflow))
 
-  onNext(mapInstruction(initialInstruction), mapData(data))
+  onInitialized(initialInstruction)
 
   private def contextWith(elements: (String, Any)*): ScriptContext = {
     val ctx = new SimpleScriptContext()
@@ -96,40 +75,42 @@ abstract class WorkflowInstance[I, D, E](script: String, variables: Map[String, 
     state
   }
 
-  // flow operation
-  def next(stateName: String): Unit = next(stateName, null)
-  def next(stateName: String, newData: AnyRef): Unit = next(stateName, newData, null)
-  def next(stateName: String, newData: AnyRef, instruction: AnyRef): Unit = {
-    data = mergeData(newData)
-    currentState = findState(stateName)
+  private class WorkflowInstanceMirror(onNext: OnNext, onEnd: OnEnd, onError: OnError) {
+    def next(stateName: String): Unit = next(stateName, null)
+    def next(stateName: String, newData: AnyRef): Unit = next(stateName, newData, null)
+    def next(stateName: String, newData: AnyRef, instruction: AnyRef): Unit = {
+      data = mergeData(newData)
+      currentState = findState(stateName)
 
-    onNext(mapInstruction(instruction), mapData(data))
-  }
+      onNext(instruction, data)
+    }
 
-  def end(newData: AnyRef): Unit = end(newData, null)
-  def end(newData: AnyRef, instruction: AnyRef): Unit = {
-    data = mergeData(newData)
-    ended = true
+    def end(newData: AnyRef): Unit = end(newData, null)
+    def end(newData: AnyRef, instruction: AnyRef): Unit = {
+      data = mergeData(newData)
+      ended = true
 
-    onEnd(mapInstruction(instruction), mapData(data))
-  }
+      onEnd(instruction, data)
+    }
 
-  def error(error: AnyRef, newData: AnyRef, instruction: AnyRef): Unit = {
-    data = mergeData(newData)
+    def error(error: AnyRef, newData: AnyRef, instruction: AnyRef): Unit = {
+      data = mergeData(newData)
 
-    onError(mapError(error), mapInstruction(instruction), mapData(data))
+      onError(error, instruction, data)
+    }
+
   }
 
   // request submission
-  def tell[A](request: A)(implicit executor: ExecutionContext): Unit = {
+  def tell[A](request: A, onNext: OnNext, onEnd: OnEnd, onError: OnError)(implicit executor: ExecutionContext): Unit = {
     if (!ended) {
       val bindings = engine.createBindings()
+      val mirror = new WorkflowInstanceMirror(onNext, onEnd, onError)
       bindings.put("executor", executor)
       variables.foreach { case (k, v) => bindings.put(k, v)}
       engine.setBindings(bindings, ScriptContext.ENGINE_SCOPE)
       engine.eval("currentState.run(instance, request, data);",
-        //contextWith("currentState" -> currentState, "request" -> request, "instance" -> instance, "data" -> data))
-        contextWith("currentState" -> currentState, "request" -> request, "instance" -> this, "data" -> data))
+        contextWith("currentState" -> currentState, "request" -> request, "instance" -> mirror, "data" -> data))
     }
   }
 }
