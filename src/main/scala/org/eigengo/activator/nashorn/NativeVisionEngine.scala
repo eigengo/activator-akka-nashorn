@@ -16,7 +16,7 @@ class NativeVisionEngine {
     if (image.length == 0) Future.failed(new RuntimeException("Empty input"))
 
     val json =
-      if (math.random < 0.5) """{"coordinates":{"x":0, "y":0, "w":100, "h":100}, "kitten":[4, 5, 13, 5, 234, 12, 40]}"""
+      if (math.random < 0.9) """{"coordinates":{"x":0, "y":0, "w":100, "h":100}, "kitten":[4, 5, 13, 5, 234, 12, 40]}"""
       else                   """{}"""
 
     Future.successful(json.getBytes)

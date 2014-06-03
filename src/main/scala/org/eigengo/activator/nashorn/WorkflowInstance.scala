@@ -1,10 +1,7 @@
 package org.eigengo.activator.nashorn
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror
-import jdk.nashorn.internal.runtime.ScriptObject
 import javax.script.{SimpleScriptContext, ScriptContext, ScriptEngineManager}
 import scala.concurrent.ExecutionContext
-import java.util
 import org.eigengo.activator.nashorn.WorkflowInstance.{OnError, OnEnd, OnNext, OnInitialized}
 
 object WorkflowInstance {
