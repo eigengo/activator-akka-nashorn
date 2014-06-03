@@ -17,14 +17,19 @@ object Workflow extends App {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def onResponse(instruction: Any, data: Any, end: Boolean): Unit = {
-    if (end)
-      println(s">>> Finished using $instruction with $data")
-    else
-      println(s">>> Transition using $instruction with $data")
+  def onNext(instruction: Any, data: Any): Unit = {
+    println(s">>> Transition using $instruction with $data")
   }
 
-  val structureExample = new WorkflowInstance(loadScript("/structure.js"), Map())(onResponse) with MapInstructionAndData
+  def onEnd(instruction: Any, data: Any): Unit = {
+    println(s">>> Finished using $instruction with $data")
+  }
+
+  def onError(error: Any, instruction: Any, data: Any): Unit = {
+    println(s">>> Error $error using $instruction with $data")
+  }
+
+  val structureExample = new WorkflowInstance(loadScript("/structure.js"), Map())(onNext)(onEnd)(onError) with ToMapInstructionAndDataMapper with PassthroughErrorMapper
   structureExample.tell(loadImage("/kittens/lost.jpg"))
   structureExample.tell(loadImage("/kittens/k2.jpg"))
   structureExample.tell(loadImage("/kittens/k1.jpg"))
@@ -33,7 +38,7 @@ object Workflow extends App {
   
   val nativeExample = new WorkflowInstance(
     loadScript("/native.js"),
-    Map("ocr" -> nativeOcr, "biometric" -> nativeBiometric, "vision" -> nativeVision))(onResponse) with MapInstructionAndData
+    Map("ocr" -> nativeOcr, "biometric" -> nativeBiometric, "vision" -> nativeVision))(onNext)(onEnd)(onError) with ToMapInstructionAndDataMapper with PassthroughErrorMapper
   nativeExample.tell(loadImage("/kittens/lost.jpg"))
   Thread.sleep(1000)
   nativeExample.tell(loadImage("/kittens/k2.jpg"))

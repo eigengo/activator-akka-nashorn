@@ -19,7 +19,7 @@ function workflow() {
         states: [
             {
                 name: "process-poster",
-                run: function (instance, request, data) {
+                run: function (instance, request) {
                     var poster = requestToBytes(request);
 
                     var text = Future.adapt(ocr.recognise(poster));
