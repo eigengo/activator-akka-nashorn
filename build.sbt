@@ -34,7 +34,7 @@ scalacOptions ++= Seq(
 )
 
 unmanagedResourceDirectories in Compile <++= baseDirectory {
-  base => Seq(base / "src/main/angular")
+  base => Seq(base / "src/angular", base / "src/ios")
 }
 
 crossPaths := false
